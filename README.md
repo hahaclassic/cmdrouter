@@ -25,7 +25,7 @@
 
 ## Examples
 
-More examples [here](/examples/).
+More examples are [here](/examples/).
 
 ### Default
 
@@ -96,10 +96,53 @@ func (c *CmdRouter) Group(name string, handlers ...OptionHandler) *CmdRouter
 Example:
 
 ```go
-router.Group("Admin",
-    OptionHandler{Name: "Create User", Exec: createUser},
-    OptionHandler{Name: "Delete User", Exec: deleteUser},
-)
+// ..
+logHandlers := []cmdrouter.OptionHandler{
+    {
+        Name: "Backend logs",
+        Exec: func(ctx context.Context) error {
+            fmt.Println("backend logs here.")
+            return nil
+        },
+    },
+    {
+        Name: "Frontend logs",
+        Exec: func(ctx context.Context) error {
+            fmt.Println("frontend logs here.")
+            return nil
+        },
+    },
+}
+
+router := cmdrouter.NewCmdRouter("Main Menu")
+devGroup := router.Group("Developer")
+devGroup.Group("Debug Logs", logHandlers...)
+//
+```
+
+Result:
+```
++---+-------------+
+| # | Developer   |
++---+-------------+
+| 1 | Debug Logs  |
+| 2 | System Info |
+| 0 | <-Back      |
++---+-------------+
+
+Enter option number: 1
+
++---+---------------+
+| # | Debug Logs    |
++---+---------------+
+| 1 | Backend logs  |
+| 2 | Frontend logs |
+| 0 | <-Back        |
++---+---------------+
+
+Enter option number: 1
+
+backend logs here.
 ```
 
 ## Middlewares
@@ -185,7 +228,7 @@ Result (table.StyleRounded):
 ╰───┴──────────────╯
 ```
 
-You also can table.StyleColoredBlackOnBlueWhite or others.
+You also can use table.StyleColoredBlackOnBlueWhite or others.
 
 ## License
 
