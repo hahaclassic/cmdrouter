@@ -8,14 +8,13 @@ import (
 
 // DefaultPrinter prints tables using simple ASCII box drawing.
 //
-// Example output:
-// +---+----------------+
-// | # |     Menu       |
-// +---+----------------+
-// | 1 | Login          |
-// | 2 | View Profile   |
-// | 0 | Exit           |
-// +---+----------------+
+//	+---+----------------+
+//	| # |     Menu       |
+//	+---+----------------+
+//	| 1 | Login          |
+//	| 2 | View Profile   |
+//	| 0 | Exit           |
+//	+---+----------------+
 type DefaultPrinter struct{}
 
 // PrintTable implements the TablePrinter interface.
