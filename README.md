@@ -96,7 +96,7 @@ func (c *CmdRouter) Group(name string, handlers ...OptionHandler) *CmdRouter
 Example:
 
 ```go
-// ..
+// ...
 logHandlers := []cmdrouter.OptionHandler{
     {
         Name: "Backend logs",
@@ -117,7 +117,7 @@ logHandlers := []cmdrouter.OptionHandler{
 router := cmdrouter.NewCmdRouter("Main Menu")
 devGroup := router.Group("Developer")
 devGroup.Group("Debug Logs", logHandlers...)
-//
+// ...
 ```
 
 Result:
