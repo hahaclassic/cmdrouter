@@ -11,15 +11,15 @@ func main() {
 	ctx := context.Background()
 
 	// Global middleware
-	logMiddleware := func(ctx context.Context) error {
+	logMiddleware := func(ctx context.Context) (context.Context, error) {
 		fmt.Println("[Middleware] Global: Logging access")
-		return nil
+		return ctx, nil
 	}
 
 	// Handler middleware
-	adminCheck := func(ctx context.Context) error {
+	adminCheck := func(ctx context.Context) (context.Context, error) {
 		fmt.Println("[Middleware] Handler: Admin check passed")
-		return nil
+		return ctx, nil
 	}
 
 	// handlers
@@ -65,7 +65,7 @@ func main() {
 		},
 	}
 
-	router := cmdrouter.NewCmdRouter("Main Menu", nil)
+	router := cmdrouter.NewCmdRouter("Main Menu")
 	devGroup := router.Group("Developer")
 	devGroup.Group("Debug Logs", logHandlers...)
 	devGroup.AddOptions(cmdrouter.OptionHandler{

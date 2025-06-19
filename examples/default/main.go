@@ -11,9 +11,9 @@ func main() {
 	ctx := context.Background()
 
 	// Middleware for authentication
-	authMiddleware := func(ctx context.Context) error {
+	authMiddleware := func(ctx context.Context) (context.Context, error) {
 		fmt.Println("[Middleware] Authenticated!")
-		return nil
+		return ctx, nil
 	}
 
 	// Login handler
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Create the command router with handlers
-	router := cmdrouter.NewCmdRouter("Main Menu", nil, loginHandler, profileHandler)
+	router := cmdrouter.NewCmdRouter("Main Menu", loginHandler, profileHandler)
 	router.AddMiddleware(authMiddleware)
 
 	// Start the router
