@@ -210,7 +210,7 @@ func (p PrettyTablePrinter) PrintTable(headers []string, rows [][]any) {
 
 func main() {
     // ...
-    printer := PrettyTablePrinter{Style: table.StyleColoredMagentaWhiteOnBlack}
+    printer := PrettyTablePrinter{Style: table.StyleRounded}
 	router := cmdrouter.NewCmdRouter("Main Menu", options...)
     router.SetTablePrinter(printer) // set pretty printer
     router.Run(ctx)
@@ -228,7 +228,7 @@ Result (table.StyleRounded):
 ╰───┴──────────────╯
 ```
 
-You also can use table.StyleColoredBlackOnBlueWhite or others.
+You also can use table.StyleColoredMagentaWhiteOnBlack or others.
 
 ## License
 
