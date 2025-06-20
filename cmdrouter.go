@@ -55,6 +55,8 @@ type CmdRouter struct {
 	middlewares  []Middleware    // Global middlewares applied before each handler runs.
 	tablePrinter TablePrinter    // Table printer used for rendering CLI menus.
 	isGroup      bool            // Indicates whether this router is a subgroup (submenu).
+	path         string          // Full path of this router in the CLI hierarchy, e.g. "/auth/login".
+	pathShow     bool            // If true, the path is shown at the top of the menu.
 }
 
 // NewCmdRouter creates a new command router with the given name and optional handlers.
@@ -65,6 +67,8 @@ func NewCmdRouter(name string, handlers ...OptionHandler) *CmdRouter {
 		handlers:     handlers,
 		tablePrinter: DefaultPrinter{},
 		isGroup:      false,
+		path:         constructPath(name),
+		pathShow:     false,
 	}
 }
 
@@ -75,6 +79,8 @@ func (c *CmdRouter) Group(name string, handlers ...OptionHandler) *CmdRouter {
 		handlers:     handlers,
 		tablePrinter: c.tablePrinter,
 		isGroup:      true,
+		path:         c.path + constructPath(name),
+		pathShow:     c.pathShow,
 	}
 
 	c.AddOptions(OptionHandler{
@@ -100,6 +106,12 @@ func (c *CmdRouter) AddMiddleware(m Middleware) {
 // AddOptions appends new handlers to the router.
 func (c *CmdRouter) AddOptions(handlers ...OptionHandler) {
 	c.handlers = append(c.handlers, handlers...)
+}
+
+// PathShow enables or disables path display for the current router and its groups.
+// When enabled, the path will be printed at the top of the menu.
+func (c *CmdRouter) PathShow(enable bool) {
+	c.pathShow = enable
 }
 
 // Run starts the main router loop: shows the menu, processes input, applies middlewares,
@@ -149,6 +161,7 @@ func (c *CmdRouter) Run(ctx context.Context) {
 
 // getOption shows the menu and reads the user's selection via safe input.
 func (c CmdRouter) getOption() int {
+	c.showPath()
 	c.showMenu()
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -187,4 +200,16 @@ func (c *CmdRouter) showMenu() {
 
 	c.tablePrinter.PrintTable(headers, rows)
 	fmt.Println()
+}
+
+// showPath prints the current router path if path display is enabled.
+// Useful for nested groups to provide context on the user's location in the CLI hierarchy.
+func (c *CmdRouter) showPath() {
+	if c.pathShow {
+		fmt.Println(c.path)
+	}
+}
+
+func constructPath(name string) string {
+	return "/" + strings.ReplaceAll(strings.ToLower(name), " ", "_")
 }
