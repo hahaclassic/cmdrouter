@@ -66,6 +66,7 @@ func main() {
 	}
 
 	router := cmdrouter.NewCmdRouter("Main Menu")
+	router.PathShow(true)
 	devGroup := router.Group("Developer")
 	devGroup.Group("Debug Logs", logHandlers...)
 	devGroup.AddOptions(cmdrouter.OptionHandler{
