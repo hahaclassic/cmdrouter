@@ -146,7 +146,8 @@ func (c *CmdRouter) Group(name string, options ...Option) *CmdRouter {
 		Handler: func(ctx context.Context) error {
 			group.Run(ctx)
 			return nil
-		}})
+		},
+	})
 
 	return group
 }
@@ -200,7 +201,7 @@ func (c *CmdRouter) Run(ctx context.Context) {
 
 // getOptionNumber displays the menu and reads the user's numeric selection from stdin.
 // It keeps prompting until the input is a valid option number.
-func (c CmdRouter) getOptionNumber() int {
+func (c *CmdRouter) getOptionNumber() int {
 	c.showPath()
 	c.showMenu()
 
@@ -208,11 +209,14 @@ func (c CmdRouter) getOptionNumber() int {
 
 	for {
 		_, _ = fmt.Fprint(c.out, "Enter option number: ")
+
 		if !scanner.Scan() {
 			if scanner.Err() != nil {
 				_, _ = fmt.Fprintln(c.out, "Input error. Try again.")
+
 				continue
 			}
+
 			break
 		}
 

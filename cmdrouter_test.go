@@ -9,15 +9,15 @@ import (
 )
 
 func TestBasicRouter(t *testing.T) {
-	ctx := context.Background()
-	var output bytes.Buffer
-
+	ctx := t.Context()
 	executed := false
+
+	var output bytes.Buffer
 
 	opts := []Option{
 		{
 			Name: "Test Option",
-			Handler: func(ctx context.Context) error {
+			Handler: func(_ context.Context) error {
 				executed = true
 				output.WriteString("Handler executed\n")
 				return nil
@@ -31,6 +31,7 @@ func TestBasicRouter(t *testing.T) {
 	)
 
 	router.Run(ctx)
+
 	if !executed {
 		t.Error("Handler was not executed")
 	}
@@ -38,13 +39,14 @@ func TestBasicRouter(t *testing.T) {
 	if !strings.Contains(output.String(), "Test Menu") {
 		t.Error("Menu title not printed")
 	}
+
 	if !strings.Contains(output.String(), "Handler executed") {
 		t.Error("Handler output missing")
 	}
 }
 
 func TestMiddlewareOrder(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var output bytes.Buffer
 
 	callOrder := []string{}
@@ -64,7 +66,7 @@ func TestMiddlewareOrder(t *testing.T) {
 
 	opt := Option{
 		Name: "Test",
-		Handler: func(ctx context.Context) error {
+		Handler: func(_ context.Context) error {
 			callOrder = append(callOrder, "handler")
 			return nil
 		},
@@ -92,12 +94,12 @@ type dummyPrinter struct {
 	called bool
 }
 
-func (d *dummyPrinter) PrintTable(out io.Writer, headers []string, rows [][]any) {
+func (d *dummyPrinter) PrintTable(_ io.Writer, _ []string, _ [][]any) {
 	d.called = true
 }
 
 func TestCustomTablePrinter(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var output bytes.Buffer
 
 	printer := &dummyPrinter{}
@@ -105,7 +107,7 @@ func TestCustomTablePrinter(t *testing.T) {
 	opts := []Option{
 		{
 			Name: "Test Option",
-			Handler: func(ctx context.Context) error {
+			Handler: func(_ context.Context) error {
 				output.WriteString("Executed\n")
 				return nil
 			},

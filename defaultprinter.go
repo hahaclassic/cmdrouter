@@ -57,13 +57,16 @@ func (DefaultPrinter) computeColumnWidths(headers []string, rows [][]any) []int 
 
 // printBorder prints the horizontal border line based on column widths.
 func (DefaultPrinter) printBorder(out io.Writer, colWidths []int) {
-	var b strings.Builder
+	const offset = 2
+	var border strings.Builder
+
 	for _, w := range colWidths {
-		b.WriteByte('+')
-		b.WriteString(strings.Repeat("-", w+2))
+		border.WriteByte('+')
+		border.WriteString(strings.Repeat("-", w+offset))
 	}
-	b.WriteByte('+')
-	_, _ = fmt.Fprintln(out, b.String())
+	border.WriteByte('+')
+
+	_, _ = fmt.Fprintln(out, border.String())
 }
 
 // printRow prints a single row with given column widths.
