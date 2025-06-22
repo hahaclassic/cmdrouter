@@ -16,6 +16,9 @@
 - No external dependencies (only Go standard library)
 - Customizable table output by implementing the `TablePrinter` interface
 - Optionally, you can use libraries like [`go-pretty`](https://github.com/jedib0t/go-pretty) for prettier tables
+- Current path display for better context inside nested submenus (e.g. `Main > Settings > Network`)
+- Configurable behavior using functional options
+
 
 ## Install
 
@@ -115,7 +118,6 @@ logHandlers := []cmdrouter.Options{
 }
 
 router := cmdrouter.NewCmdRouter("Main Menu")
-router.PathShow(true) // You also can 
 devGroup := router.Group("Developer")
 devGroup.Group("Debug Logs", logHandlers...)
 // ...
@@ -272,7 +274,7 @@ You also can use table.StyleColoredMagentaWhiteOnBlack or others.
 CmdRouter can show the current menu path to indicate nested command locations, e.g.:
 
 ```
-/main_menu/developer/debug_logs
+> Main Menu > Developer > Debug Logs
 +---+---------------+
 | # | Debug Logs    |
 +---+---------------+
@@ -320,6 +322,11 @@ router.Setup(
 - WithOptions(...Option) — add command options
 
 - WithInputOutput(io.Reader, io.Writer) — specify custom input/output streams (useful for testing, etc.)
+
+> ⚠️ **Important** \
+> All settings (e.g. input/output, tablePrinter, pathShow, etc.) must be configured **before creating subgroups**.
+> Settings applied after calling `Group(...)` **will not affect already created subgroups**. 
+> This also applies to common methods such as SetInputOutput, SetTablePrinter, and others.
 
 ## License
 
