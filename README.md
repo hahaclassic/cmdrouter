@@ -2,6 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/hahaclassic/cmdrouter.svg)](https://pkg.go.dev/github.com/hahaclassic/cmdrouter)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hahaclassic/cmdrouter)](https://goreportcard.com/report/github.com/hahaclassic/cmdrouter)
+[![Go Tests](https://github.com/hahaclassic/cmdrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/hahaclassic/cmdrouter/actions/workflows/ci.yml)
 
 <!-- [![Build Status](https://github.com/hahaclassic/go-pretty/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hahaclassic/go-pretty/actions?query=workflow%3ACI+event%3Apush+branch%3Amain)
 [![Coverage Status](https://coveralls.io/repos/github/hahaclassic/go-pretty/badge.svg?branch=main)](https://coveralls.io/github/hahaclassic/go-pretty?branch=main) -->
