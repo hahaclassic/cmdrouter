@@ -69,10 +69,11 @@ func main() {
 		},
 	}
 
-	router := cmdrouter.NewCmdRouter("Main Menu")
-	router.PathShow(true)
-	router.AddMiddlewares(cmdrouter.DefaultLoggerMiddleware,
-		cmdrouter.DefaultRecoverMiddleware)
+	// Use NewCmdRouterWithSettings for router configuration
+	router := cmdrouter.NewCmdRouterWithSettings("Main Menu",
+		cmdrouter.WithPath(true),
+		cmdrouter.WithMiddlewares(cmdrouter.DefaultLoggerMiddleware,
+			cmdrouter.DefaultRecoverMiddleware, logMiddleware))
 
 	devGroup := router.Group("Developer")
 	devGroup.Group("Debug Logs", logHandlers...)
@@ -85,15 +86,6 @@ func main() {
 	)
 
 	_ = router.Group("Settings Group", settings)
-	router.AddMiddlewares(logMiddleware)
 	router.AddOptions(login, adminPanel)
-	router.AddOptions(cmdrouter.Option{
-		Name: "!!! Panic !!!",
-		Handler: func(ctx context.Context) error {
-			var a []int
-			a[1] = 1234 // panic: runtime error: index out of range [1] with length 0
-			return nil
-		},
-	})
 	router.Run(ctx)
 }

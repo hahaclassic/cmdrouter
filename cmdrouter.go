@@ -4,85 +4,150 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log/slog"
+	"io"
 	"os"
 	"strconv"
 	"strings"
 )
 
-// Middleware represents a function that modifies the context or returns an error.
-// It is typically used for logging, authentication, etc.
-type Middleware func(ctx context.Context) (context.Context, error)
-
 // TablePrinter defines the interface for printing tabular data to the console.
 type TablePrinter interface {
-	PrintTable(headers []string, rows [][]any)
+	PrintTable(out io.Writer, headers []string, rows [][]any)
 }
 
-// OptionHandler defines a CLI command with its name, execution logic, and optional middlewares.
-type OptionHandler struct {
-	Name        string                          // Name of the operation (e.g. "login")
-	Exec        func(ctx context.Context) error // Function that executes the operation
-	Middlewares []Middleware                    // List of per-option middlewares
+// Handler represents a function that processes a CLI command.
+type Handler func(ctx context.Context) error
+
+// Middleware wraps a Handler with additional logic (e.g. logging, validation, metrics).
+// It takes a Handler and returns a new Handler with the middleware applied.
+type Middleware func(Handler) Handler
+
+// Option defines a CLI command with its name, execution logic, and optional middlewares.
+type Option struct {
+	Name        string       // Name of the operation (e.g. "login")
+	Handler     Handler      // Function that executes the operation
+	middlewares []Middleware // List of per-option middlewares
 }
 
-// AddMiddleware attaches a middleware to this option.
-func (o *OptionHandler) AddMiddleware(m Middleware) {
-	o.Middlewares = append(o.Middlewares, m)
+// AddMiddleware attaches a middlewares to this option.
+func (o *Option) AddMiddlewares(m ...Middleware) {
+	o.middlewares = append(o.middlewares, m...)
 }
 
-// Run executes the option by applying all middlewares and then calling the Exec function.
-func (o *OptionHandler) Run(ctx context.Context) error {
-	var (
-		newCtx context.Context
-		err    error
-	)
-
-	for _, middleware := range o.Middlewares {
-		if newCtx, err = middleware(ctx); err != nil {
-			return err
-		}
-		ctx = newCtx
+// Run executes the Option by wrapping its Handler with all attached middlewares in order,
+// and then invoking the resulting Handler with the provided context.
+// Middlewares are applied in the order they were added.
+func (o *Option) Run(ctx context.Context) error {
+	handler := o.Handler
+	for i := len(o.middlewares) - 1; i >= 0; i-- {
+		handler = o.middlewares[i](handler)
 	}
 
-	return o.Exec(ctx)
+	return handler(ctx)
 }
 
 // CmdRouter represents the main CLI router that handles user input and dispatches commands.
 type CmdRouter struct {
-	name         string          // Display name of the router or menu section.
-	handlers     []OptionHandler // List of available command handlers in this router.
-	middlewares  []Middleware    // Global middlewares applied before each handler runs.
-	tablePrinter TablePrinter    // Table printer used for rendering CLI menus.
-	isGroup      bool            // Indicates whether this router is a subgroup (submenu).
+	name         string       // Display name of the router or menu section.
+	options      []Option     // List of available command handlers in this router.
+	middlewares  []Middleware // Global middlewares applied before each handler runs.
+	tablePrinter TablePrinter // Table printer used for rendering CLI menus.
+	isGroup      bool         // Indicates whether this router is a subgroup (submenu).
+	path         string       // Full path of this router in the CLI hierarchy, e.g. "/auth/login".
+	pathShow     bool         // If true, the path is shown at the top of the menu.
+	in           io.Reader    // defaults to os.Stdin
+	out          io.Writer    // defaults to os.Stdout
 }
 
 // NewCmdRouter creates a new command router with the given name and optional handlers.
-// It uses DefaultPrinter for printing tables.
-func NewCmdRouter(name string, handlers ...OptionHandler) *CmdRouter {
+// It uses DefaultPrinter for printing tables and stdin/stdout for i/o streams.
+func NewCmdRouter(name string, options ...Option) *CmdRouter {
 	return &CmdRouter{
 		name:         name,
-		handlers:     handlers,
+		options:      options,
 		tablePrinter: DefaultPrinter{},
 		isGroup:      false,
+		path:         constructPath(name),
+		pathShow:     false,
+		in:           os.Stdin,
+		out:          os.Stdout,
+	}
+}
+
+// Setting is a functional option used to configure a CmdRouter.
+type Setting func(c *CmdRouter)
+
+// NewCmdRouterWithSettings creates a new CmdRouter and applies the given settings.
+func NewCmdRouterWithSettings(name string, settings ...Setting) *CmdRouter {
+	router := NewCmdRouter(name)
+	for _, setting := range settings {
+		setting(router)
+	}
+	return router
+}
+
+// WithTablePrinter sets the table printer for the CmdRouter.
+func WithTablePrinter(printer TablePrinter) Setting {
+	return func(c *CmdRouter) {
+		c.SetTablePrinter(printer)
+	}
+}
+
+// WithPath enables or disables path display in the CmdRouter.
+func WithPath(enable bool) Setting {
+	return func(c *CmdRouter) {
+		c.PathShow(enable)
+	}
+}
+
+// WithMiddlewares appends the given middlewares to the CmdRouter.
+func WithMiddlewares(middlewares ...Middleware) Setting {
+	return func(c *CmdRouter) {
+		c.AddMiddlewares(middlewares...)
+	}
+}
+
+// WithOptions appends the given options (commands/handlers) to the CmdRouter.
+func WithOptions(options ...Option) Setting {
+	return func(c *CmdRouter) {
+		c.AddOptions(options...)
+	}
+}
+
+// WithInputOutput sets the input and output streams for the CmdRouter.
+func WithInputOutput(in io.Reader, out io.Writer) Setting {
+	return func(c *CmdRouter) {
+		c.SetInputOutput(in, out)
+	}
+}
+
+// Setup applies additional settings to an existing CmdRouter.
+func (c *CmdRouter) Setup(settings ...Setting) {
+	for _, setting := range settings {
+		setting(c)
 	}
 }
 
 // Group creates a submenu as a nested router and registers it as an option in the current router.
-func (c *CmdRouter) Group(name string, handlers ...OptionHandler) *CmdRouter {
+func (c *CmdRouter) Group(name string, options ...Option) *CmdRouter {
 	group := &CmdRouter{
 		name:         name,
-		handlers:     handlers,
+		options:      options,
 		tablePrinter: c.tablePrinter,
 		isGroup:      true,
+		path:         c.path + constructPath(name),
+		pathShow:     c.pathShow,
+		in:           c.in,
+		out:          c.out,
 	}
 
-	c.AddOptions(OptionHandler{
+	c.AddOptions(Option{
 		Name: name,
-		Exec: func(ctx context.Context) error {
+		Handler: func(ctx context.Context) error {
 			group.Run(ctx)
 			return nil
-		}})
+		},
+	})
 
 	return group
 }
@@ -92,91 +157,88 @@ func (c *CmdRouter) SetTablePrinter(printer TablePrinter) {
 	c.tablePrinter = printer
 }
 
-// AddMiddleware registers a global middleware that will run before every option.
-func (c *CmdRouter) AddMiddleware(m Middleware) {
-	c.middlewares = append(c.middlewares, m)
+// AddMiddlewares registers a global middlewares that will run before every option.
+func (c *CmdRouter) AddMiddlewares(m ...Middleware) {
+	c.middlewares = append(c.middlewares, m...)
 }
 
-// AddOptions appends new handlers to the router.
-func (c *CmdRouter) AddOptions(handlers ...OptionHandler) {
-	c.handlers = append(c.handlers, handlers...)
+// AddOptions appends new options to the router.
+func (c *CmdRouter) AddOptions(options ...Option) {
+	c.options = append(c.options, options...)
+}
+
+// PathShow enables or disables path display for the current router and its groups.
+// When enabled, the path will be printed at the top of the menu.
+func (c *CmdRouter) PathShow(enable bool) {
+	c.pathShow = enable
+}
+
+func (c *CmdRouter) SetInputOutput(in io.Reader, out io.Writer) {
+	c.in = in
+	c.out = out
 }
 
 // Run starts the main router loop: shows the menu, processes input, applies middlewares,
 // and dispatches to the selected handler.
 func (c *CmdRouter) Run(ctx context.Context) {
-	defer func() {
-		if r := recover(); r != nil {
-			slog.Error("panic", "err", r)
-		}
-	}()
-
 	const exitNumber = 0
-
 	for {
-		var (
-			optionCtx context.Context = ctx
-			newCtx    context.Context
-			err       error
-		)
-
-		option := c.getOption()
-		if option == exitNumber {
+		optionNumber := c.getOptionNumber()
+		if optionNumber == exitNumber {
 			break
 		}
 
-		isFailed := false
-		for _, middleware := range c.middlewares {
-			if newCtx, err = middleware(optionCtx); err != nil {
-				slog.Error("middleware", "err", err)
-				isFailed = true
-				break
-			}
-			optionCtx = newCtx
-		}
-		if isFailed {
-			continue
+		handler := c.options[optionNumber-1].Run
+		for i := len(c.middlewares) - 1; i >= 0; i-- {
+			handler = c.middlewares[i](handler)
 		}
 
-		fmt.Println()
-		if err := c.handlers[option-1].Run(optionCtx); err != nil {
-			slog.Error("handler", "err", err)
-			continue
-		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(c.out)
+		_ = handler(ctx)
+		_, _ = fmt.Fprintln(c.out)
 	}
 }
 
-// getOption shows the menu and reads the user's selection via safe input.
-func (c CmdRouter) getOption() int {
+// getOptionNumber displays the menu and reads the user's numeric selection from stdin.
+// It keeps prompting until the input is a valid option number.
+func (c *CmdRouter) getOptionNumber() int {
+	c.showPath()
 	c.showMenu()
 
-	scanner := bufio.NewScanner(os.Stdin)
+	scanner := bufio.NewScanner(c.in)
 
 	for {
-		fmt.Print("Enter option number: ")
+		_, _ = fmt.Fprint(c.out, "Enter option number: ")
+
 		if !scanner.Scan() {
-			fmt.Println("Input error. Try again.")
-			continue
+			if scanner.Err() != nil {
+				_, _ = fmt.Fprintln(c.out, "Input error. Try again.")
+
+				continue
+			}
+
+			break
 		}
 
 		input := strings.TrimSpace(scanner.Text())
 		option, err := strconv.Atoi(input)
-		if err == nil && option >= 0 && option <= len(c.handlers) {
+		if err == nil && option >= 0 && option <= len(c.options) {
 			return option
 		}
 
-		fmt.Println("Invalid number. Try again.")
+		_, _ = fmt.Fprintln(c.out, "Invalid number. Try again.")
 	}
+
+	return 0
 }
 
 // showMenu prints the command list using the configured table printer.
 func (c *CmdRouter) showMenu() {
 	headers := []string{"#", c.name}
-	rows := make([][]any, 0, len(c.handlers))
+	rows := make([][]any, 0, len(c.options))
 
-	for i := range c.handlers {
-		rows = append(rows, []any{i + 1, c.handlers[i].Name})
+	for i := range c.options {
+		rows = append(rows, []any{i + 1, c.options[i].Name})
 	}
 
 	if c.isGroup {
@@ -185,6 +247,20 @@ func (c *CmdRouter) showMenu() {
 		rows = append(rows, []any{0, "Exit"})
 	}
 
-	c.tablePrinter.PrintTable(headers, rows)
-	fmt.Println()
+	c.tablePrinter.PrintTable(c.out, headers, rows)
+	_, _ = fmt.Fprintln(c.out)
+}
+
+// showPath prints the current router path if path display is enabled.
+// Useful for nested groups to provide context on the user's location in the CLI hierarchy.
+func (c *CmdRouter) showPath() {
+	if c.pathShow {
+		_, _ = fmt.Fprintln(c.out, c.path)
+	}
+}
+
+// constructPath converts a name into a CLI path component by making it lowercase
+// and replacing spaces with underscores. E.g. "User Auth" -> "/user_auth".
+func constructPath(name string) string {
+	return "> " + name + " "
 }

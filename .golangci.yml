@@ -1,0 +1,21 @@
+version: 2
+
+issues:
+  exclude-dirs:
+    - examples
+
+linters:
+  enable-all: true
+  disable:
+    - gochecknoinits
+    - gochecknoglobals
+    - depguard
+    - paralleltest
+    - wsl
+    - exhaustruct
+    - nlreturn
+    - testpackage
+    - err113
+
+run:
+  timeout: 1m

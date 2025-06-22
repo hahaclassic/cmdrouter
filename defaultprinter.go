@@ -2,6 +2,7 @@ package cmdrouter
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"unicode/utf8"
 )
@@ -18,21 +19,21 @@ import (
 type DefaultPrinter struct{}
 
 // PrintTable implements the TablePrinter interface.
-func (p DefaultPrinter) PrintTable(headers []string, rows [][]any) {
+func (p DefaultPrinter) PrintTable(out io.Writer, headers []string, rows [][]any) {
 	if len(headers) == 0 {
 		return
 	}
 
 	colWidths := p.computeColumnWidths(headers, rows)
-	p.printBorder(colWidths)
-	p.printRow(colWidths, p.toAny(headers))
-	p.printBorder(colWidths)
+	p.printBorder(out, colWidths)
+	p.printRow(out, colWidths, p.toAny(headers))
+	p.printBorder(out, colWidths)
 
 	for _, row := range rows {
-		p.printRow(colWidths, row)
+		p.printRow(out, colWidths, row)
 	}
 
-	p.printBorder(colWidths)
+	p.printBorder(out, colWidths)
 }
 
 // computeColumnWidths calculates the maximum width for each column based on headers and data.
@@ -55,23 +56,26 @@ func (DefaultPrinter) computeColumnWidths(headers []string, rows [][]any) []int 
 }
 
 // printBorder prints the horizontal border line based on column widths.
-func (DefaultPrinter) printBorder(colWidths []int) {
-	var b strings.Builder
+func (DefaultPrinter) printBorder(out io.Writer, colWidths []int) {
+	const offset = 2
+	var border strings.Builder
+
 	for _, w := range colWidths {
-		b.WriteString("+")
-		b.WriteString(strings.Repeat("-", w+2))
+		border.WriteByte('+')
+		border.WriteString(strings.Repeat("-", w+offset))
 	}
-	b.WriteString("+")
-	fmt.Println(b.String())
+	border.WriteByte('+')
+
+	_, _ = fmt.Fprintln(out, border.String())
 }
 
 // printRow prints a single row with given column widths.
-func (DefaultPrinter) printRow(colWidths []int, row []any) {
+func (DefaultPrinter) printRow(out io.Writer, colWidths []int, row []any) {
 	for i, cell := range row {
 		format := fmt.Sprintf("| %%-%dv ", colWidths[i])
-		fmt.Printf(format, cell)
+		_, _ = fmt.Fprintf(out, format, cell)
 	}
-	fmt.Println("|")
+	_, _ = fmt.Fprintln(out, "|")
 }
 
 // toAny converts []string to []any for uniform row printing.
