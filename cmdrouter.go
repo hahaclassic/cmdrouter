@@ -89,36 +89,35 @@ func NewCmdRouterWithSettings(name string, settings ...Setting) *CmdRouter {
 // WithTablePrinter sets the table printer for the CmdRouter.
 func WithTablePrinter(printer TablePrinter) Setting {
 	return func(c *CmdRouter) {
-		c.tablePrinter = printer
+		c.SetTablePrinter(printer)
 	}
 }
 
 // WithPath enables or disables path display in the CmdRouter.
 func WithPath(enable bool) Setting {
 	return func(c *CmdRouter) {
-		c.pathShow = enable
+		c.PathShow(enable)
 	}
 }
 
 // WithMiddlewares appends the given middlewares to the CmdRouter.
 func WithMiddlewares(middlewares ...Middleware) Setting {
 	return func(c *CmdRouter) {
-		c.middlewares = append(c.middlewares, middlewares...)
+		c.AddMiddlewares(middlewares...)
 	}
 }
 
 // WithOptions appends the given options (commands/handlers) to the CmdRouter.
 func WithOptions(options ...Option) Setting {
 	return func(c *CmdRouter) {
-		c.options = append(c.options, options...)
+		c.AddOptions(options...)
 	}
 }
 
 // WithInputOutput sets the input and output streams for the CmdRouter.
 func WithInputOutput(in io.Reader, out io.Writer) Setting {
 	return func(c *CmdRouter) {
-		c.in = in
-		c.out = out
+		c.SetInputOutput(in, out)
 	}
 }
 
@@ -173,6 +172,11 @@ func (c *CmdRouter) PathShow(enable bool) {
 	c.pathShow = enable
 }
 
+func (c *CmdRouter) SetInputOutput(in io.Reader, out io.Writer) {
+	c.in = in
+	c.out = out
+}
+
 // Run starts the main router loop: shows the menu, processes input, applies middlewares,
 // and dispatches to the selected handler.
 func (c *CmdRouter) Run(ctx context.Context) {
@@ -205,8 +209,11 @@ func (c CmdRouter) getOptionNumber() int {
 	for {
 		fmt.Fprint(c.out, "Enter option number: ")
 		if !scanner.Scan() {
-			fmt.Println("Input error. Try again.")
-			continue
+			if scanner.Err() != nil {
+				fmt.Fprintln(c.out, "Input error. Try again.")
+				continue
+			}
+			break
 		}
 
 		input := strings.TrimSpace(scanner.Text())
@@ -217,6 +224,8 @@ func (c CmdRouter) getOptionNumber() int {
 
 		fmt.Fprintln(c.out, "Invalid number. Try again.")
 	}
+
+	return 0
 }
 
 // showMenu prints the command list using the configured table printer.
@@ -249,5 +258,5 @@ func (c *CmdRouter) showPath() {
 // constructPath converts a name into a CLI path component by making it lowercase
 // and replacing spaces with underscores. E.g. "User Auth" -> "/user_auth".
 func constructPath(name string) string {
-	return "/" + strings.ReplaceAll(strings.ToLower(name), " ", "_")
+	return "> " + name + " "
 }
