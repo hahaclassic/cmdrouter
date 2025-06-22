@@ -1,0 +1,15 @@
+version: 1
+
+issues:
+  exclude-dirs:
+    - examples
+
+linters:
+  enable-all: false
+  disable:
+    - gochecknoinits
+    - gochecknoglobals
+    - depguard
+
+run:
+  timeout: 1m

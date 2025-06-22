@@ -10,33 +10,6 @@ on:
       - main
 
 jobs:
-  init:
-    name: Init
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.0'
-          cache: true
-
-      - name: Create mod cache directory
-        run: mkdir -p /home/runner/go/pkg/mod
-
-      - name: Cache modules
-        uses: actions/cache@v4
-        with:
-          path: /home/runner/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/backend/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install dependencies (Go)
-        run: go mod tidy
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
