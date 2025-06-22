@@ -63,16 +63,16 @@ func (DefaultPrinter) printBorder(out io.Writer, colWidths []int) {
 		b.WriteString(strings.Repeat("-", w+2))
 	}
 	b.WriteByte('+')
-	fmt.Fprintln(out, b.String())
+	_, _ = fmt.Fprintln(out, b.String())
 }
 
 // printRow prints a single row with given column widths.
 func (DefaultPrinter) printRow(out io.Writer, colWidths []int, row []any) {
 	for i, cell := range row {
 		format := fmt.Sprintf("| %%-%dv ", colWidths[i])
-		fmt.Fprintf(out, format, cell)
+		_, _ = fmt.Fprintf(out, format, cell)
 	}
-	fmt.Fprintln(out, "|")
+	_, _ = fmt.Fprintln(out, "|")
 }
 
 // toAny converts []string to []any for uniform row printing.
