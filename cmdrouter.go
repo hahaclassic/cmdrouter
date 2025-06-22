@@ -192,9 +192,9 @@ func (c *CmdRouter) Run(ctx context.Context) {
 			handler = c.middlewares[i](handler)
 		}
 
-		fmt.Fprintln(c.out)
+		_, _ = fmt.Fprintln(c.out)
 		_ = handler(ctx)
-		fmt.Fprintln(c.out)
+		_, _ = fmt.Fprintln(c.out)
 	}
 }
 
@@ -207,10 +207,10 @@ func (c CmdRouter) getOptionNumber() int {
 	scanner := bufio.NewScanner(c.in)
 
 	for {
-		fmt.Fprint(c.out, "Enter option number: ")
+		_, _ = fmt.Fprint(c.out, "Enter option number: ")
 		if !scanner.Scan() {
 			if scanner.Err() != nil {
-				fmt.Fprintln(c.out, "Input error. Try again.")
+				_, _ = fmt.Fprintln(c.out, "Input error. Try again.")
 				continue
 			}
 			break
@@ -222,7 +222,7 @@ func (c CmdRouter) getOptionNumber() int {
 			return option
 		}
 
-		fmt.Fprintln(c.out, "Invalid number. Try again.")
+		_, _ = fmt.Fprintln(c.out, "Invalid number. Try again.")
 	}
 
 	return 0
@@ -244,14 +244,14 @@ func (c *CmdRouter) showMenu() {
 	}
 
 	c.tablePrinter.PrintTable(c.out, headers, rows)
-	fmt.Println()
+	_, _ = fmt.Fprintln(c.out)
 }
 
 // showPath prints the current router path if path display is enabled.
 // Useful for nested groups to provide context on the user's location in the CLI hierarchy.
 func (c *CmdRouter) showPath() {
 	if c.pathShow {
-		fmt.Println(c.path)
+		_, _ = fmt.Fprintln(c.out, c.path)
 	}
 }
 
