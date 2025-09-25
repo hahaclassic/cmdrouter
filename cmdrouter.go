@@ -128,10 +128,6 @@ func (c *CmdRouter) Setup(settings ...Setting) {
 	}
 }
 
-func WithWiddlewareCopy(enable bool) bool {
-	ret
-}
-
 // Group creates a submenu as a nested router and registers it as an option in the current router.
 // ATTENTION: middleware of the parent router is NOT COPIED.
 func (c *CmdRouter) Group(name string, options ...Option) *CmdRouter {
