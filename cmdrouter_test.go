@@ -71,11 +71,11 @@ func TestMiddlewareOrder(t *testing.T) {
 			return nil
 		},
 	}
-	opt.AddMiddlewares(local1)
+	opt.AddMiddleware(local1)
 
 	router := NewCmdRouterWithSettings("Menu",
 		WithOptions(opt),
-		WithMiddlewares(global1),
+		WithMiddleware(global1),
 		WithInputOutput(strings.NewReader("1\n0\n"), &output),
 	)
 

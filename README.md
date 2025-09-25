@@ -4,15 +4,12 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/hahaclassic/cmdrouter)](https://goreportcard.com/report/github.com/hahaclassic/cmdrouter)
 [![Go Tests](https://github.com/hahaclassic/cmdrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/hahaclassic/cmdrouter/actions/workflows/ci.yml)
 
-<!-- [![Build Status](https://github.com/hahaclassic/go-pretty/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hahaclassic/go-pretty/actions?query=workflow%3ACI+event%3Apush+branch%3Amain)
-[![Coverage Status](https://coveralls.io/repos/github/hahaclassic/go-pretty/badge.svg?branch=main)](https://coveralls.io/github/hahaclassic/go-pretty?branch=main) -->
-
 `cmdrouter` is a lightweight zero-dependency Go package for building command-line menus.
 
 ## Features
 
 - Simple ASCII table menu printing by default
-- Support for global/local middlewares
+- Support for global/local middleware
 - Grouping of commands into submenus
 - No external dependencies (only Go standard library)
 - Customizable table output by implementing the `TablePrinter` interface
@@ -149,9 +146,9 @@ Enter option number: 1
 backend logs here.
 ```
 
-## Middlewares
+## Middleware
 
-Use middlewares to:
+Use middleware to:
 - Inject values into the context
 - Handle authentication or logging
 - Or for any other custom processing
@@ -162,28 +159,28 @@ type Handler func(ctx context.Context) error
 type Middleware func(Handler) Handler
 ```
 
-### There are two types of middlewares:
-- Global: Added to the router via AddMiddlewares, applied to all handlers.
-- Local: Added to individual handlers via OptionHandler.AddMiddlewares.
+### There are two types of middleware:
+- Global: Added to the router via AddMiddleware, applied to all handlers.
+- Local: Added to individual handlers via OptionHandler.AddMiddleware.
 
 ```go
-router.AddMiddlewares(func(next cmdrouter.Handler) cmdrouter.Handler {
-		return func(ctx context.Context) error {
-            fmt.Println("[Middleware] Before!")
-		    err := next(ctx)
-            fmt.Println("[Middleware] After!")
+router.AddMiddleware(func(next cmdrouter.Handler) cmdrouter.Handler {
+    return func(ctx context.Context) error {
+        fmt.Println("[Middleware] Before!")
+        err := next(ctx)
+        fmt.Println("[Middleware] After!")
 
-            return err
-        }
-	})
+        return err
+    }
+})
 ```
 
 ### Execution Order
-Middlewares are executed in the order they are added:
+Middleware are executed in the order they are added:
 
-1. Router-level (global) middlewares
+1. Router-level (global) middleware
 
-2. Handler-level (local) middlewares
+2. Handler-level (local) middleware
 
 3. Command execution (Handler)
 
@@ -197,10 +194,10 @@ handler := cmdrouter.Option{
         return nil
     },
 }
-handler.AddMiddlewares(local1, local2) // add local middlewares for this handler
+handler.AddMiddleware(local1, local2) // add local middleware for this handler
 
 router := cmdrouter.NewCmdRouter("Main Menu", handler)
-router.AddMiddlewares( // add global middlewares for this router
+router.AddMiddleware( // add global middleware for this router
     global1,
     global2,
     global3,
@@ -225,7 +222,7 @@ type PrettyTablePrinter struct {
 }
 
 func (p PrettyTablePrinter) PrintTable(out io.Writer, 
-        headers []string, rows [][]any) {
+    headers []string, rows [][]any) {
 	
     t := table.NewWriter()
 	t.SetOutputMirror(out)
@@ -292,14 +289,14 @@ router.PathShow(true)
 or the functional option ```WithPath(true)``` when creating or configuring the router.
 
 ### Settings (functional options)
-CmdRouter supports flexible configuration via functional options called Settings. This allows you to conveniently customize your router with various options such as custom table printers, middlewares, path display, input/output streams, and commands.
+CmdRouter supports flexible configuration via functional options called Settings. This allows you to conveniently customize your router with various options such as custom table printers, middleware, path display, input/output streams, and commands.
 
 Example of creating a router with settings:
 ```go
 router := cmdrouter.NewCmdRouterWithSettings("Main Menu",
     cmdrouter.WithPath(true),
     cmdrouter.WithTablePrinter(myCustomPrinter),
-    cmdrouter.WithMiddlewares(myMiddleware),
+    cmdrouter.WithMiddleware(myMiddleware),
     cmdrouter.WithOptions(myOptions...),
 )
 ```
@@ -308,7 +305,7 @@ Or applying settings to an existing router:
 ```go
 router.Setup(
     cmdrouter.WithPath(true),
-    cmdrouter.WithMiddlewares(additionalMiddleware),
+    cmdrouter.WithMiddleware(additionalMiddleware),
 )
 ```
 
@@ -318,7 +315,7 @@ router.Setup(
 
 - WithPath(bool) — enable or disable path display
 
-- WithMiddlewares(...Middleware) — add global middlewares
+- WithMiddleware(...Middleware) — add global middleware
 
 - WithOptions(...Option) — add command options
 

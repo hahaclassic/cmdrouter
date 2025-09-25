@@ -22,25 +22,25 @@ type Handler func(ctx context.Context) error
 // It takes a Handler and returns a new Handler with the middleware applied.
 type Middleware func(Handler) Handler
 
-// Option defines a CLI command with its name, execution logic, and optional middlewares.
+// Option defines a CLI command with its name, execution logic, and optional middleware.
 type Option struct {
-	Name        string       // Name of the operation (e.g. "login")
-	Handler     Handler      // Function that executes the operation
-	middlewares []Middleware // List of per-option middlewares
+	Name       string       // Name of the operation (e.g. "login")
+	Handler    Handler      // Function that executes the operation
+	middleware []Middleware // List of per-option middleware
 }
 
-// AddMiddleware attaches a middlewares to this option.
-func (o *Option) AddMiddlewares(m ...Middleware) {
-	o.middlewares = append(o.middlewares, m...)
+// AddMiddleware attaches a middleware to this option.
+func (o *Option) AddMiddleware(m ...Middleware) {
+	o.middleware = append(o.middleware, m...)
 }
 
-// Run executes the Option by wrapping its Handler with all attached middlewares in order,
+// Run executes the Option by wrapping its Handler with all attached middleware in order,
 // and then invoking the resulting Handler with the provided context.
-// Middlewares are applied in the order they were added.
+// Middleware are applied in the order they were added.
 func (o *Option) Run(ctx context.Context) error {
 	handler := o.Handler
-	for i := len(o.middlewares) - 1; i >= 0; i-- {
-		handler = o.middlewares[i](handler)
+	for i := len(o.middleware) - 1; i >= 0; i-- {
+		handler = o.middleware[i](handler)
 	}
 
 	return handler(ctx)
@@ -50,7 +50,7 @@ func (o *Option) Run(ctx context.Context) error {
 type CmdRouter struct {
 	name         string       // Display name of the router or menu section.
 	options      []Option     // List of available command handlers in this router.
-	middlewares  []Middleware // Global middlewares applied before each handler runs.
+	middleware   []Middleware // Global middleware applied before each handler runs.
 	tablePrinter TablePrinter // Table printer used for rendering CLI menus.
 	isGroup      bool         // Indicates whether this router is a subgroup (submenu).
 	path         string       // Full path of this router in the CLI hierarchy, e.g. "/auth/login".
@@ -100,10 +100,10 @@ func WithPath(enable bool) Setting {
 	}
 }
 
-// WithMiddlewares appends the given middlewares to the CmdRouter.
-func WithMiddlewares(middlewares ...Middleware) Setting {
+// WithMiddleware appends the given middleware to the CmdRouter.
+func WithMiddleware(middleware ...Middleware) Setting {
 	return func(c *CmdRouter) {
-		c.AddMiddlewares(middlewares...)
+		c.AddMiddleware(middleware...)
 	}
 }
 
@@ -128,7 +128,12 @@ func (c *CmdRouter) Setup(settings ...Setting) {
 	}
 }
 
+func WithWiddlewareCopy(enable bool) bool {
+	ret
+}
+
 // Group creates a submenu as a nested router and registers it as an option in the current router.
+// ATTENTION: middleware of the parent router is NOT COPIED.
 func (c *CmdRouter) Group(name string, options ...Option) *CmdRouter {
 	group := &CmdRouter{
 		name:         name,
@@ -152,14 +157,22 @@ func (c *CmdRouter) Group(name string, options ...Option) *CmdRouter {
 	return group
 }
 
+// GroupWithMiddleware is similar to Group, but the middleware of the parent router is also copied.
+func (c *CmdRouter) GroupWithMiddleware(name string, options ...Option) *CmdRouter {
+	group := c.Group(name, options...)
+	group.middleware = c.middleware
+
+	return group
+}
+
 // SetTablePrinter sets the table printer for this router and all its groups.
 func (c *CmdRouter) SetTablePrinter(printer TablePrinter) {
 	c.tablePrinter = printer
 }
 
-// AddMiddlewares registers a global middlewares that will run before every option.
-func (c *CmdRouter) AddMiddlewares(m ...Middleware) {
-	c.middlewares = append(c.middlewares, m...)
+// AddMiddleware registers a global middleware that will run before every option.
+func (c *CmdRouter) AddMiddleware(m ...Middleware) {
+	c.middleware = append(c.middleware, m...)
 }
 
 // AddOptions appends new options to the router.
@@ -178,7 +191,7 @@ func (c *CmdRouter) SetInputOutput(in io.Reader, out io.Writer) {
 	c.out = out
 }
 
-// Run starts the main router loop: shows the menu, processes input, applies middlewares,
+// Run starts the main router loop: shows the menu, processes input, applies middleware,
 // and dispatches to the selected handler.
 func (c *CmdRouter) Run(ctx context.Context) {
 	const exitNumber = 0
@@ -189,8 +202,8 @@ func (c *CmdRouter) Run(ctx context.Context) {
 		}
 
 		handler := c.options[optionNumber-1].Run
-		for i := len(c.middlewares) - 1; i >= 0; i-- {
-			handler = c.middlewares[i](handler)
+		for i := len(c.middleware) - 1; i >= 0; i-- {
+			handler = c.middleware[i](handler)
 		}
 
 		_, _ = fmt.Fprintln(c.out)
