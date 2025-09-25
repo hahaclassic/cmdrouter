@@ -50,7 +50,7 @@ func main() {
 			return nil
 		},
 	}
-	adminPanel.AddMiddlewares(adminCheck) // add middleware for admin panel
+	adminPanel.AddMiddleware(adminCheck) // add middleware for admin panel
 
 	logHandlers := []cmdrouter.Option{
 		{
@@ -71,7 +71,7 @@ func main() {
 
 	router := cmdrouter.NewCmdRouter("Main Menu")
 	router.PathShow(true)
-	router.AddMiddlewares(cmdrouter.DefaultLoggerMiddleware,
+	router.AddMiddleware(cmdrouter.DefaultLoggerMiddleware,
 		cmdrouter.DefaultRecoverMiddleware)
 
 	devGroup := router.Group("Developer")
@@ -85,7 +85,7 @@ func main() {
 	)
 
 	_ = router.Group("Settings Group", settings)
-	router.AddMiddlewares(logMiddleware)
+	router.AddMiddleware(logMiddleware)
 	router.AddOptions(login, adminPanel)
 	router.AddOptions(cmdrouter.Option{
 		Name: "!!! Panic !!!",
