@@ -104,7 +104,7 @@ Email: john@example.com
 ## Groups
 
 Groups allow nesting commands under a submenu to better organize related options.
-Each group is itself a CmdRouter with its own set of handlers and shares the same TablePrinter.
+Each group is itself a CmdRouter with its own set of handlers and shares the same `TablePrinter`.
 
 ```go
 func (c *CmdRouter) Group(name string, handlers ...Options) *CmdRouter
@@ -198,7 +198,7 @@ type Middleware func(Handler) Handler
 
 ### There are two types of middleware:
 - Global: Added to the router via AddMiddleware, applied to all handlers.
-- Local: Added to individual handlers via OptionHandler.AddMiddleware.
+- Local: Added to individual handlers via `OptionHandler.AddMiddleware`.
 
 ```go
 router.AddMiddleware(func(next cmdrouter.Handler) cmdrouter.Handler {
@@ -251,7 +251,7 @@ global 1 -> global 2 -> global 3 -> local 1 -> local 2 -> Option Handler
 
 By default, cmdrouter uses a simple ASCII printer (DefaultPrinter) relying only on Go's standard library.
 
-If you want a prettier table output, you can implement the TablePrinter interface yourself. For example, using [`go-pretty`](https://github.com/jedib0t/go-pretty):
+If you want a prettier table output, you can implement the `TablePrinter` interface yourself. For example, using [`go-pretty`](https://github.com/jedib0t/go-pretty):
 
 ```go
 type PrettyTablePrinter struct {
@@ -289,7 +289,7 @@ func main() {
 }
 ```
 
-Result (table.StyleRounded):
+Result (`table.StyleRounded`):
 ```
 ╭───┬──────────────╮
 │ # │ MAIN MENU    │
@@ -300,7 +300,7 @@ Result (table.StyleRounded):
 ╰───┴──────────────╯
 ```
 
-You also can use table.StyleColoredMagentaWhiteOnBlack or others.
+You also can use `table.StyleColoredMagentaWhiteOnBlack` or others.
 
 ## Other features
 
@@ -348,17 +348,17 @@ router.Setup(
 
 #### Available settings include:
 
-- WithTablePrinter(TablePrinter) — set a custom table printer
+- `WithTablePrinter(TablePrinter)` — set a custom table printer
 
-- WithPath(bool) — enable or disable path display
+- `WithPath(bool)` — enable or disable path display
 
-- WithMiddleware(...Middleware) — add global middleware
+- `WithMiddleware(...Middleware)` — add global middleware
 
-- WithOptions(...Option) — add command options
+- `WithOptions(...Option)` — add command options
 
-- WithInputOutput(io.Reader, io.Writer) — specify custom input/output streams (useful for testing, etc.)
+- `WithInputOutput(io.Reader, io.Writer)` — specify custom input/output streams (useful for testing, etc.)
 
-> ⚠️ **Important** \
+> [!WARNING] \
 > All settings (e.g. input/output, tablePrinter, pathShow, etc.) must be configured **before creating subgroups**.
 > Settings applied after calling `Group(...)` **will not affect already created subgroups**. 
 > This also applies to common methods such as SetInputOutput, SetTablePrinter, and others.
