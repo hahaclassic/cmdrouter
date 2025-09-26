@@ -6,6 +6,26 @@
 
 `cmdrouter` is a lightweight zero-dependency Go package for building command-line menus.
 
+## Table of contents
+
+<details><summary>Click to expand</summary>
+
+- [Features](#features)
+- [Install](#install)
+- [Examples](#examples)
+  - [Default](#default)
+- [Groups](#groups)
+  - [GroupWithMiddleware](#groupwithmiddleware)
+- [Middleware](#middleware)
+  - [Execution Order](#execution-order)
+- [Custom table printing](#custom-table-printing)
+- [Other features](#other-features)
+  - [Path display](#path-display)
+  - [Settings (functional options)](#settings-functional-options)
+- [License](#license)
+
+</details>
+
 ## Features
 
 - Simple ASCII table menu printing by default
@@ -144,6 +164,23 @@ Enter option number: 1
 Enter option number: 1
 
 backend logs here.
+```
+
+### GroupWithMiddleware
+
+`GroupWithMiddleware` is similar to Group, but it copies the parent router's middleware into the new group. This allows all global middleware from the parent to be applied automatically in the subgroup.
+
+```go
+func (c *CmdRouter) GroupWithMiddleware(name string, options ...Option) *CmdRouter
+```
+
+Example:
+```go
+router := cmdrouter.NewCmdRouter("Main Menu")
+router.AddMiddleware(loggingMiddleware, authMiddleware)
+
+adminGroup := router.GroupWithMiddleware("Admin", adminOptions...)
+// adminGroup now has loggingMiddleware and authMiddleware automatically applied
 ```
 
 ## Middleware
