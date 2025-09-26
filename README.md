@@ -358,7 +358,7 @@ router.Setup(
 
 - `WithInputOutput(io.Reader, io.Writer)` — specify custom input/output streams (useful for testing, etc.)
 
-> [!WARNING] \
+> [!WARNING]
 > All settings (e.g. input/output, tablePrinter, pathShow, etc.) must be configured **before creating subgroups**.
 > Settings applied after calling `Group(...)` **will not affect already created subgroups**. 
 > This also applies to common methods such as SetInputOutput, SetTablePrinter, and others.
