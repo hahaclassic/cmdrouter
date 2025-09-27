@@ -54,11 +54,11 @@ func main() {
 			return nil
 		},
 	}
-	handler.AddMiddlewares(local1, local2)
+	handler.AddMiddleware(local1, local2)
 
 	// Create the command router with handler
 	router := cmdrouter.NewCmdRouter("Main Menu", handler)
-	router.AddMiddlewares(
+	router.AddMiddleware(
 		global1,
 		global2,
 		global3,

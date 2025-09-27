@@ -50,7 +50,7 @@ func main() {
 			return nil
 		},
 	}
-	adminPanel.AddMiddlewares(adminCheck) // add middleware for admin panel
+	adminPanel.AddMiddleware(adminCheck) // add middleware for admin panel
 
 	logHandlers := []cmdrouter.Option{
 		{
@@ -72,7 +72,7 @@ func main() {
 	// Use NewCmdRouterWithSettings for router configuration
 	router := cmdrouter.NewCmdRouterWithSettings("Main Menu",
 		cmdrouter.WithPath(true),
-		cmdrouter.WithMiddlewares(cmdrouter.DefaultLoggerMiddleware,
+		cmdrouter.WithMiddleware(cmdrouter.DefaultLoggerMiddleware,
 			cmdrouter.DefaultRecoverMiddleware, logMiddleware))
 
 	devGroup := router.Group("Developer")

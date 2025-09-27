@@ -38,7 +38,7 @@ func main() {
 
 	// Create the command router with handlers
 	router := cmdrouter.NewCmdRouter("Main Menu", loginHandler, profileHandler)
-	router.AddMiddlewares(authMiddleware)
+	router.AddMiddleware(authMiddleware)
 
 	// Start the router
 	router.Run(ctx)

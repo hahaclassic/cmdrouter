@@ -4,15 +4,32 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/hahaclassic/cmdrouter)](https://goreportcard.com/report/github.com/hahaclassic/cmdrouter)
 [![Go Tests](https://github.com/hahaclassic/cmdrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/hahaclassic/cmdrouter/actions/workflows/ci.yml)
 
-<!-- [![Build Status](https://github.com/hahaclassic/go-pretty/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hahaclassic/go-pretty/actions?query=workflow%3ACI+event%3Apush+branch%3Amain)
-[![Coverage Status](https://coveralls.io/repos/github/hahaclassic/go-pretty/badge.svg?branch=main)](https://coveralls.io/github/hahaclassic/go-pretty?branch=main) -->
-
 `cmdrouter` is a lightweight zero-dependency Go package for building command-line menus.
+
+## Table of contents
+
+<details><summary>Click to expand</summary>
+
+- [Features](#features)
+- [Install](#install)
+- [Examples](#examples)
+  - [Default](#default)
+- [Groups](#groups)
+  - [GroupWithMiddleware](#groupwithmiddleware)
+- [Middleware](#middleware)
+  - [Execution Order](#execution-order)
+- [Custom table printing](#custom-table-printing)
+- [Other features](#other-features)
+  - [Path display](#path-display)
+  - [Settings (functional options)](#settings-functional-options)
+- [License](#license)
+
+</details>
 
 ## Features
 
 - Simple ASCII table menu printing by default
-- Support for global/local middlewares
+- Support for global/local middleware
 - Grouping of commands into submenus
 - No external dependencies (only Go standard library)
 - Customizable table output by implementing the `TablePrinter` interface
@@ -87,7 +104,7 @@ Email: john@example.com
 ## Groups
 
 Groups allow nesting commands under a submenu to better organize related options.
-Each group is itself a CmdRouter with its own set of handlers and shares the same TablePrinter.
+Each group is itself a CmdRouter with its own set of handlers and shares the same `TablePrinter`.
 
 ```go
 func (c *CmdRouter) Group(name string, handlers ...Options) *CmdRouter
@@ -149,9 +166,26 @@ Enter option number: 1
 backend logs here.
 ```
 
-## Middlewares
+### GroupWithMiddleware
 
-Use middlewares to:
+`GroupWithMiddleware` is similar to Group, but it copies the parent router's middleware into the new group. This allows all global middleware from the parent to be applied automatically in the subgroup.
+
+```go
+func (c *CmdRouter) GroupWithMiddleware(name string, options ...Option) *CmdRouter
+```
+
+Example:
+```go
+router := cmdrouter.NewCmdRouter("Main Menu")
+router.AddMiddleware(loggingMiddleware, authMiddleware)
+
+adminGroup := router.GroupWithMiddleware("Admin", adminOptions...)
+// adminGroup now has loggingMiddleware and authMiddleware automatically applied
+```
+
+## Middleware
+
+Use middleware to:
 - Inject values into the context
 - Handle authentication or logging
 - Or for any other custom processing
@@ -162,28 +196,28 @@ type Handler func(ctx context.Context) error
 type Middleware func(Handler) Handler
 ```
 
-### There are two types of middlewares:
-- Global: Added to the router via AddMiddlewares, applied to all handlers.
-- Local: Added to individual handlers via OptionHandler.AddMiddlewares.
+### There are two types of middleware:
+- Global: Added to the router via AddMiddleware, applied to all handlers.
+- Local: Added to individual handlers via `OptionHandler.AddMiddleware`.
 
 ```go
-router.AddMiddlewares(func(next cmdrouter.Handler) cmdrouter.Handler {
-		return func(ctx context.Context) error {
-            fmt.Println("[Middleware] Before!")
-		    err := next(ctx)
-            fmt.Println("[Middleware] After!")
+router.AddMiddleware(func(next cmdrouter.Handler) cmdrouter.Handler {
+    return func(ctx context.Context) error {
+        fmt.Println("[Middleware] Before!")
+        err := next(ctx)
+        fmt.Println("[Middleware] After!")
 
-            return err
-        }
-	})
+        return err
+    }
+})
 ```
 
 ### Execution Order
-Middlewares are executed in the order they are added:
+Middleware are executed in the order they are added:
 
-1. Router-level (global) middlewares
+1. Router-level (global) middleware
 
-2. Handler-level (local) middlewares
+2. Handler-level (local) middleware
 
 3. Command execution (Handler)
 
@@ -197,10 +231,10 @@ handler := cmdrouter.Option{
         return nil
     },
 }
-handler.AddMiddlewares(local1, local2) // add local middlewares for this handler
+handler.AddMiddleware(local1, local2) // add local middleware for this handler
 
 router := cmdrouter.NewCmdRouter("Main Menu", handler)
-router.AddMiddlewares( // add global middlewares for this router
+router.AddMiddleware( // add global middleware for this router
     global1,
     global2,
     global3,
@@ -217,7 +251,7 @@ global 1 -> global 2 -> global 3 -> local 1 -> local 2 -> Option Handler
 
 By default, cmdrouter uses a simple ASCII printer (DefaultPrinter) relying only on Go's standard library.
 
-If you want a prettier table output, you can implement the TablePrinter interface yourself. For example, using [`go-pretty`](https://github.com/jedib0t/go-pretty):
+If you want a prettier table output, you can implement the `TablePrinter` interface yourself. For example, using [`go-pretty`](https://github.com/jedib0t/go-pretty):
 
 ```go
 type PrettyTablePrinter struct {
@@ -225,7 +259,7 @@ type PrettyTablePrinter struct {
 }
 
 func (p PrettyTablePrinter) PrintTable(out io.Writer, 
-        headers []string, rows [][]any) {
+    headers []string, rows [][]any) {
 	
     t := table.NewWriter()
 	t.SetOutputMirror(out)
@@ -255,7 +289,7 @@ func main() {
 }
 ```
 
-Result (table.StyleRounded):
+Result (`table.StyleRounded`):
 ```
 ╭───┬──────────────╮
 │ # │ MAIN MENU    │
@@ -266,7 +300,7 @@ Result (table.StyleRounded):
 ╰───┴──────────────╯
 ```
 
-You also can use table.StyleColoredMagentaWhiteOnBlack or others.
+You also can use `table.StyleColoredMagentaWhiteOnBlack` or others.
 
 ## Other features
 
@@ -292,14 +326,14 @@ router.PathShow(true)
 or the functional option ```WithPath(true)``` when creating or configuring the router.
 
 ### Settings (functional options)
-CmdRouter supports flexible configuration via functional options called Settings. This allows you to conveniently customize your router with various options such as custom table printers, middlewares, path display, input/output streams, and commands.
+CmdRouter supports flexible configuration via functional options called Settings. This allows you to conveniently customize your router with various options such as custom table printers, middleware, path display, input/output streams, and commands.
 
 Example of creating a router with settings:
 ```go
 router := cmdrouter.NewCmdRouterWithSettings("Main Menu",
     cmdrouter.WithPath(true),
     cmdrouter.WithTablePrinter(myCustomPrinter),
-    cmdrouter.WithMiddlewares(myMiddleware),
+    cmdrouter.WithMiddleware(myMiddleware),
     cmdrouter.WithOptions(myOptions...),
 )
 ```
@@ -308,23 +342,23 @@ Or applying settings to an existing router:
 ```go
 router.Setup(
     cmdrouter.WithPath(true),
-    cmdrouter.WithMiddlewares(additionalMiddleware),
+    cmdrouter.WithMiddleware(additionalMiddleware),
 )
 ```
 
 #### Available settings include:
 
-- WithTablePrinter(TablePrinter) — set a custom table printer
+- `WithTablePrinter(TablePrinter)` — set a custom table printer
 
-- WithPath(bool) — enable or disable path display
+- `WithPath(bool)` — enable or disable path display
 
-- WithMiddlewares(...Middleware) — add global middlewares
+- `WithMiddleware(...Middleware)` — add global middleware
 
-- WithOptions(...Option) — add command options
+- `WithOptions(...Option)` — add command options
 
-- WithInputOutput(io.Reader, io.Writer) — specify custom input/output streams (useful for testing, etc.)
+- `WithInputOutput(io.Reader, io.Writer)` — specify custom input/output streams (useful for testing, etc.)
 
-> ⚠️ **Important** \
+> [!WARNING]
 > All settings (e.g. input/output, tablePrinter, pathShow, etc.) must be configured **before creating subgroups**.
 > Settings applied after calling `Group(...)` **will not affect already created subgroups**. 
 > This also applies to common methods such as SetInputOutput, SetTablePrinter, and others.
