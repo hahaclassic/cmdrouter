@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+type escapeCode string
+
+const (
+	esc            escapeCode = "\033"
+	escClearScreen            = esc + "[2J"
+	escMoveHome               = esc + "[H"
+)
+
 // TablePrinter defines the interface for printing tabular data to the console.
 type TablePrinter interface {
 	PrintTable(out io.Writer, headers []string, rows [][]any)
@@ -57,6 +65,7 @@ type CmdRouter struct {
 	pathShow     bool         // If true, the path is shown at the top of the menu.
 	in           io.Reader    // defaults to os.Stdin
 	out          io.Writer    // defaults to os.Stdout
+	resetScreen  bool
 }
 
 // NewCmdRouter creates a new command router with the given name and optional handlers.
@@ -121,6 +130,12 @@ func WithInputOutput(in io.Reader, out io.Writer) Setting {
 	}
 }
 
+func WithScreenResetting(enable bool) Setting {
+	return func(c *CmdRouter) {
+		c.SetScreenResetting(enable)
+	}
+}
+
 // Setup applies additional settings to an existing CmdRouter.
 func (c *CmdRouter) Setup(settings ...Setting) {
 	for _, setting := range settings {
@@ -140,6 +155,7 @@ func (c *CmdRouter) Group(name string, options ...Option) *CmdRouter {
 		pathShow:     c.pathShow,
 		in:           c.in,
 		out:          c.out,
+		resetScreen:  c.resetScreen,
 	}
 
 	c.AddOptions(Option{
@@ -187,12 +203,19 @@ func (c *CmdRouter) SetInputOutput(in io.Reader, out io.Writer) {
 	c.out = out
 }
 
+func (c *CmdRouter) SetScreenResetting(enable bool) {
+	c.resetScreen = enable
+}
+
 // Run starts the main router loop: shows the menu, processes input, applies middleware,
 // and dispatches to the selected handler.
 func (c *CmdRouter) Run(ctx context.Context) {
 	const exitNumber = 0
+	c.ResetScreenIfEnabled()
+
 	for {
 		optionNumber := c.getOptionNumber()
+		c.ResetScreenIfEnabled()
 		if optionNumber == exitNumber {
 			break
 		}
@@ -206,6 +229,11 @@ func (c *CmdRouter) Run(ctx context.Context) {
 		_ = handler(ctx)
 		_, _ = fmt.Fprintln(c.out)
 	}
+}
+
+func (c *CmdRouter) ResetScreenIfEnabled() {
+	fmt.Print(escClearScreen)
+	fmt.Print(escMoveHome)
 }
 
 // getOptionNumber displays the menu and reads the user's numeric selection from stdin.
