@@ -73,6 +73,7 @@ func main() {
 	router.PathShow(true)
 	router.AddMiddleware(cmdrouter.DefaultLoggerMiddleware,
 		cmdrouter.DefaultRecoverMiddleware)
+	router.SetScreenResetting(true)
 
 	devGroup := router.Group("Developer")
 	devGroup.Group("Debug Logs", logHandlers...)
